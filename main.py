@@ -10,8 +10,8 @@ creds = ServiceAccountCredentials.from_json_keyfile_name('client_secret.json', s
 client = gspread.authorize(creds)
 
 # Find a workbook by name and open the first sheet
-# Make sure you use the right name here.
-sheet = client.open("pyData").sheet1
+sheet = client.open("HAL 2.0").worksheet("Autocaptura")
+
 
 def first_empty_row():
     all = sheet.get_all_values()
@@ -38,31 +38,61 @@ def first_empty_row():
     # every row filled
     return row_num
 
-
+import telegram
 from telegram.ext import Updater, CommandHandler, MessageHandler, Filters
-updater = Updater(token='281446968:AAF3wWkjOmvnhkRkxYmrBC7DbkGqV_R2R-c')
+updater = Updater(token='415026589:AAEhnEpmEPLlCblcgCpzCtHt4pJgoNwA8Ok')
 dispatcher = updater.dispatcher
 
 
 def start(bot, update):
-    bot.send_message(chat_id=update.message.chat_id, text="Soy un bot, hablemos!")
+    custom_keyboard = [["On", "Off"], ["2000", "3000", "4000", "1"], ["Status", "Done"]]
+    reply_markup = telegram.ReplyKeyboardMarkup(custom_keyboard)
+    bot.send_message(chat_id=update.message.chat_id, text="What can I do for you?", reply_markup=reply_markup)
 
 
 def reply(bot, update):
     user_said=update.message.text
-    if user_said=="Hola":
-        bot_say="Hey!"
-    elif user_said=="Qué tal?":
-        bot_say="Bien, y tú?"
-    elif user_said == "Bien también":
-        bot_say = "Me alegro :)"
-    elif user_said == "Qué sabes hacer?":
-        bot_say = "Pocas cosas, estoy aprendiendo. De momento solo sé guardar todo lo que digas en una hoja de excel."
+    if user_said=="On":
+        sheet.update_cell(1, 2, "On")
+        sheet.update_cell(4, 2, "On")
+        reply_markup = telegram.ReplyKeyboardRemove()
+        bot.send_message(chat_id=update.message.chat_id, text="Done!", reply_markup=reply_markup)
+    elif user_said=="Off":
+        sheet.update_cell(1, 2, "Off")
+        sheet.update_cell(4, 2, "Off")
+        reply_markup = telegram.ReplyKeyboardRemove()
+        bot.send_message(chat_id=update.message.chat_id, text="Done!", reply_markup=reply_markup)
+    elif user_said == "2000":
+        sheet.update_cell(2, 2, "2000")
+        reply_markup = telegram.ReplyKeyboardRemove()
+        bot.send_message(chat_id=update.message.chat_id, text="Done!", reply_markup=reply_markup)
+    elif user_said == "3000":
+        sheet.update_cell(2, 2, "3000")
+        reply_markup = telegram.ReplyKeyboardRemove()
+        bot.send_message(chat_id=update.message.chat_id, text="Done!", reply_markup=reply_markup)
+    elif user_said == "4000":
+        sheet.update_cell(2, 2, "4000")
+        reply_markup = telegram.ReplyKeyboardRemove()
+        bot.send_message(chat_id=update.message.chat_id, text="Done!", reply_markup=reply_markup)
+    elif user_said == "1":
+        sheet.update_cell(2, 2, "1")
+        reply_markup = telegram.ReplyKeyboardRemove()
+        bot.send_message(chat_id=update.message.chat_id, text="Done!", reply_markup=reply_markup)
+    elif user_said == "Status":
+        sheet.update_cell(3, 2, "Yes")
+        threshold = sheet.cell(2,2).value
+        updator = sheet.cell(1,2).value
+        reply_markup = telegram.ReplyKeyboardRemove()
+        bot.send_message(chat_id=update.message.chat_id, text="Autocapture {} - Threshold {}".format(updator,threshold), reply_markup=reply_markup)
+        bot.send_message(chat_id=update.message.chat_id, text="Check your email for further details")
+    elif user_said == "Done":
+        reply_markup = telegram.ReplyKeyboardRemove()
+        bot.send_message(chat_id=update.message.chat_id, text="ok, sleeping...", reply_markup=reply_markup)
     else:
-        bot_say="(guardado en excel)"
-    n = first_empty_row()
-    sheet.update_cell(n, 1, user_said)
-    bot.send_message(chat_id=update.message.chat_id, text=bot_say)
+        custom_keyboard = [["On", "Off"], ["2000", "3000", "4000", "1"], ["Status", "Done"]]
+        reply_markup = telegram.ReplyKeyboardMarkup(custom_keyboard)
+        bot.send_message(chat_id=update.message.chat_id, text="Alive, may I help you?", reply_markup=reply_markup)
+
 
 def main():
 
