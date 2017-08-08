@@ -7,14 +7,30 @@ logger.info("Running for first time")
 #Google Drive library definition.
 import gspread
 from oauth2client.service_account import ServiceAccountCredentials
-scope = ['https://spreadsheets.google.com/feeds']
-creds = ServiceAccountCredentials.from_json_keyfile_name('client_secret.json', scope)
-client = gspread.authorize(creds)
-sheet = client.open("HAL 2.0").worksheet("Autocaptura")
+def connect_Google_API():
+    logger.info("Connecting to HAL Spreadsheet")
+    scope = ['https://spreadsheets.google.com/feeds']
+    creds = ServiceAccountCredentials.from_json_keyfile_name('client_secret.json', scope)
+    client = gspread.authorize(creds)
+    sheet = client.open("HAL 2.0").worksheet("Autocaptura")
+    return sheet
+
+#Keeping alive Google Drive library.
+import threading
+import time
+def refresh_drive_api():
+    logger.info("Keeping alive Drive API")
+    scope = ['https://spreadsheets.google.com/feeds']
+    credentials = ServiceAccountCredentials.from_json_keyfile_name('client_secret.json', scope)
+    gc = gspread.authorize(credentials)
+    wks = gc.open("HAL 2.0").worksheet("Autocaptura")
+    headers = gspread.httpsession.HTTPSession(headers={'Connection': 'Keep-Alive'})
+    gc = gspread.Client(auth=credentials, http_session=headers)
+    gc.login()
+    threading.Timer(120, refresh_drive_api).start()
 
 #Requests and time library definition.
 import requests
-import time
 import urllib
 import json
 
@@ -82,17 +98,17 @@ def send_keyboard(text, chat_id, reply_markup):
     text = urllib.parse.quote_plus(text)
     reply_markup = json.dumps(reply_markup)
     url = URL + "sendMessage?text={}&chat_id={}&reply_markup={}".format(text, chat_id, reply_markup)
-    print (url)
     get_html_from_url(url)
 
 #Function to handle the message received
-def echo_all(updates):
+def manage_message(updates, last_update):
     logger.info("Processing last message received")
     for update in updates["result"]:
         try:
             text = update["message"]["text"]
             chat = update["message"]["chat"]["id"]
             logger.info("Input: {} from {}".format(text,chat))
+            sheet = connect_Google_API()
             if text == "On":
                 sheet.update_cell(1, 2, "On")
                 sheet.update_cell(4, 2, "On")
@@ -120,34 +136,34 @@ def echo_all(updates):
                 send_message("Autocapture {} - Threshold {}".format(updator,threshold), chat)
                 send_message("Log send to your email".format(updator, threshold), chat)
             elif text == "Alive?":
+                send_message("Server OK", chat)
                 sheet.update_cell(5, 2, "Yes")
                 alive = sheet.cell(5, 2).value
                 if alive=="Yes":
-                    send_message("Yes", chat)
+                    send_message("HAL OK", chat)
                     sheet.update_cell(5, 2, "-")
                 else:
-                    send_message("HAL 2.0 offline", chat)
+                    send_message("HAL KO", chat)
             else:
                 send_keyboard("How can I help you?", chat, reply_markup_on)
             logger.info("Last message received processed")
         except Exception as e:
-            logger.info("Error processing last message")
-            print(e)
+            logger.info("Error processing last message: {}".format(e))
 
 #Main code
 def main():
     logger.info("Entering main loop")
+    refresh_drive_api()
     last_update_id = None
     try:
         while True:
             updates = get_telegram_updates(last_update_id)
             if len(updates["result"]) > 0:
                 last_update_id = get_last_update_id(updates) + 1
-                echo_all(updates)
+                manage_message(updates,last_update_id )
             time.sleep(1)
     except Exception as e:
         logger.info("Something bad happened: {}".format(e))
-        print(e)
 
 
 #This is needed to let python know that THIS is the main code
