@@ -78,7 +78,7 @@ def get_last_update_id(updates):
 reply_markup_on = {
     "keyboard":[
         ["On","Off"],
-        ["2000","3000","4000","1"],
+        ["1","500","1000","2000"],
         ["Status","Alive?"]
     ],
     "one_time_keyboard":True
