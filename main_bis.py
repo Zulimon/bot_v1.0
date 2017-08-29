@@ -120,11 +120,11 @@ def manage_message(updates, last_update):
             elif text == "2000":
                 sheet.update_cell(2, 2, "2000")
                 send_message("Done", chat)
-            elif text == "3000":
-                sheet.update_cell(2, 2, "3000")
+            elif text == "1000":
+                sheet.update_cell(2, 2, "1000")
                 send_message("Done", chat)
-            elif text == "4000":
-                sheet.update_cell(2, 2, "4000")
+            elif text == "500":
+                sheet.update_cell(2, 2, "500")
                 send_message("Done", chat)
             elif text == "1":
                 sheet.update_cell(2, 2, "1")
